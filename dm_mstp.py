@@ -1,4 +1,5 @@
 import numpy as np
+from decorators import measure_time, handle_errors
 
 
 class DMMSTP:
@@ -7,30 +8,32 @@ class DMMSTP:
         Initialize the DMMSTP class with the graph data.
 
         Parameters:
-        graph_data (list of tuples): Each tuple represents an edge with (node1, node2, weight).
+        graph_data (dict): A dictionary with 'distance_edges' and optional 'travel_time_edges' as keys.
+                           Each value is a dictionary where the keys are node IDs and the values are
+                           dictionaries with neighboring node IDs and edge weights.
         """
         self.graph_data = graph_data
-        self.matrix, self.node_indices = self._initialize_matrix(graph_data)
+        self.matrix, self.node_indices = self._initialize_matrix(graph_data['distance_edges'])
         self.min_columns = self._initialize_min_columns(self.matrix)
         self.mst_path = []
         self.marked_rows = set()
         self.marked_columns = set()
 
-    def _initialize_matrix(self, graph_data):
+    def _initialize_matrix(self, distance_edges):
         """
         Convert the input graph data into an adjacency matrix.
 
-        Parameters:
-        graph_data (list of tuples): Each tuple represents an edge with (node1, node2, weight).
+        Parameters: distance_edges (dict): A dictionary with node IDs as keys and dictionaries of neighboring nodes
+        with weights as values.
 
         Returns:
         np.ndarray: Adjacency matrix representing the graph.
         dict: Mapping from nodes to indices.
         """
         nodes = set()
-        for edge in graph_data:
-            nodes.add(edge[0])
-            nodes.add(edge[1])
+        for node, neighbors in distance_edges.items():
+            nodes.add(node)
+            nodes.update(neighbors.keys())
 
         node_indices = {node: index for index, node in enumerate(nodes)}
         n = len(nodes)
@@ -39,10 +42,12 @@ class DMMSTP:
         matrix = np.full((n, n), np.inf)
 
         # Fill in the adjacency matrix with given edge weights
-        for node1, node2, weight in graph_data:
-            i, j = node_indices[node1], node_indices[node2]
-            matrix[i][j] = weight
-            matrix[j][i] = weight
+        for node1, neighbors in distance_edges.items():
+            i = node_indices[node1]
+            for node2, weight in neighbors.items():
+                j = node_indices[node2]
+                matrix[i][j] = weight
+                matrix[j][i] = weight
 
         return matrix, node_indices
 
@@ -118,6 +123,8 @@ class DMMSTP:
         mst_output = [(inverse_node_indices[i], inverse_node_indices[j], weight) for i, j, weight in self.mst_path]
         return mst_output
 
+    @measure_time
+    @handle_errors
     def run(self):
         """
         Execute the DM-MSTP algorithm to find the Minimum Spanning Tree (MST).
