@@ -13,11 +13,13 @@ class DMMSTP:
                            dictionaries with neighboring node IDs and edge weights.
         """
         self.graph_data = graph_data
-        self.matrix, self.node_indices = self._initialize_matrix(graph_data['distance_edges'])
-        self.min_columns = self._initialize_min_columns(self.matrix)
-        self.mst_path = []
+
         self.marked_rows = set()
         self.marked_columns = set()
+
+        self.matrix, self.node_indices = self._initialize_matrix(graph_data)
+        self.min_columns = self._initialize_min_columns(self.matrix)
+        self.mst_path = []
 
     def _initialize_matrix(self, distance_edges):
         """
